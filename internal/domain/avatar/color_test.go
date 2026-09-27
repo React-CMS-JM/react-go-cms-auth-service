@@ -9,7 +9,8 @@ func TestFromEmailStable(t *testing.T) {
 	if FromEmail("  Admin@Example.com ") != FromEmail("admin@example.com") {
 		t.Fatal("case")
 	}
-	got := FromEmail("admin@example.com")
+	var got string
+	got = FromEmail("admin@example.com")
 	for _, c := range palette {
 		if got == c {
 			return

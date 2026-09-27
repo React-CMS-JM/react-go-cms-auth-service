@@ -1,4 +1,4 @@
-package platform
+package configuration
 
 import (
 	"bufio"
@@ -8,19 +8,26 @@ import (
 
 // LoadDotEnv reads KEY=VALUE lines. Existing process environment wins, matching Quarkus.
 func LoadDotEnv(path string) {
-	f, err := os.Open(path)
+	var file *os.File
+	var err error
+	file, err = os.Open(path)
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	defer file.Close()
 
-	sc := bufio.NewScanner(f)
-	for sc.Scan() {
-		line := strings.TrimSpace(sc.Text())
+	var scanner *bufio.Scanner
+	scanner = bufio.NewScanner(file)
+	for scanner.Scan() {
+		var line string
+		line = strings.TrimSpace(scanner.Text())
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
 		}
-		key, val, ok := strings.Cut(line, "=")
+		var key string
+		var val string
+		var ok bool
+		key, val, ok = strings.Cut(line, "=")
 		if !ok {
 			continue
 		}

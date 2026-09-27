@@ -6,25 +6,32 @@ var palette = []string{
 	"#ef4444", "#22c55e", "#ec4899", "#64748b", "#06b6d4",
 }
 
+// FromEmail returns a stable palette color for an email address.
 func FromEmail(email string) string {
-	trimmed := trimLower(email)
+	var trimmed string
+	trimmed = trimLower(email)
 	if trimmed == "" {
 		return palette[0]
 	}
-	h := javaHash(trimmed)
-	idx := floorMod(h, int32(len(palette)))
+	var h int32
+	h = javaHash(trimmed)
+	var idx int32
+	idx = floorMod(h, int32(len(palette)))
 	return palette[idx]
 }
 
 func trimLower(s string) string {
-	i, j := 0, len(s)
+	var i int
+	var j int
+	i, j = 0, len(s)
 	for i < j && (s[i] == ' ' || s[i] == '\t' || s[i] == '\n' || s[i] == '\r') {
 		i++
 	}
 	for j > i && (s[j-1] == ' ' || s[j-1] == '\t' || s[j-1] == '\n' || s[j-1] == '\r') {
 		j--
 	}
-	b := []byte(s[i:j])
+	var b []byte
+	b = []byte(s[i:j])
 	for k, c := range b {
 		if c >= 'A' && c <= 'Z' {
 			b[k] = c + ('a' - 'A')
@@ -42,7 +49,8 @@ func javaHash(s string) int32 {
 }
 
 func floorMod(a, m int32) int32 {
-	r := a % m
+	var r int32
+	r = a % m
 	if r < 0 {
 		r += m
 	}

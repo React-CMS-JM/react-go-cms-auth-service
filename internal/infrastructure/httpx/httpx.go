@@ -1,4 +1,5 @@
-package platform
+// Package httpx writes JSON responses and applies CORS for the auth service.
+package httpx
 
 import (
 	"encoding/json"
@@ -8,42 +9,52 @@ import (
 	"strings"
 )
 
+// APIError is an HTTP failure with a response field name.
 type APIError struct {
 	Status  int
 	Message string
 	Field   string
 }
 
+// Error returns the response message.
 func (e *APIError) Error() string { return e.Message }
 
+// BadRequest builds a 400 API error.
 func BadRequest(field, msg string) *APIError {
 	return &APIError{Status: http.StatusBadRequest, Message: msg, Field: field}
 }
 
+// Unauthorized builds a 401 API error.
 func Unauthorized(msg string) *APIError {
 	return &APIError{Status: http.StatusUnauthorized, Message: msg, Field: "message"}
 }
 
+// NotFound builds a 404 API error.
 func NotFound(field, msg string) *APIError {
 	return &APIError{Status: http.StatusNotFound, Message: msg, Field: field}
 }
 
+// WriteJSON writes a JSON body with HTML escaping disabled.
 func WriteJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
-	enc := json.NewEncoder(w)
+	var enc *json.Encoder
+	enc = json.NewEncoder(w)
 	enc.SetEscapeHTML(false)
 	_ = enc.Encode(v)
 }
 
+// WriteNoContent writes HTTP 204.
 func WriteNoContent(w http.ResponseWriter) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// WriteError writes an APIError body, or a generic 500.
 func WriteError(w http.ResponseWriter, err error, defaultField string) {
 	var api *APIError
 	if errors.As(err, &api) {
-		field := api.Field
+		var field string
+		field = api.Field
 		if field == "" {
 			field = defaultField
 		}
@@ -53,15 +64,17 @@ func WriteError(w http.ResponseWriter, err error, defaultField string) {
 	WriteJSON(w, http.StatusInternalServerError, map[string]string{defaultField: "Internal server error"})
 }
 
+// DecodeJSON decodes a body and rejects unknown fields.
 func DecodeJSON(r *http.Request, dest any) error {
 	if r.Body == nil {
 		return BadRequest("message", "request body is required")
 	}
-	dec := json.NewDecoder(r.Body)
+	var dec *json.Decoder
+	dec = json.NewDecoder(r.Body)
 	dec.DisallowUnknownFields()
-	// Frontend payloads match the known fields. Unknown fields are rejected so typos fail closed.
-	// Re-enable if a client starts sending extras; the React app does not.
-	if err := dec.Decode(dest); err != nil {
+	var err error
+	err = dec.Decode(dest)
+	if err != nil {
 		if errors.Is(err, io.EOF) {
 			return BadRequest("message", "request body is required")
 		}
@@ -75,20 +88,26 @@ func DecodeJSONLenient(r *http.Request, dest any) error {
 	if r.Body == nil {
 		return io.EOF
 	}
-	dec := json.NewDecoder(r.Body)
-	if err := dec.Decode(dest); err != nil {
+	var dec *json.Decoder
+	dec = json.NewDecoder(r.Body)
+	var err error
+	err = dec.Decode(dest)
+	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// CORS allows the configured browser origins.
 func CORS(origins []string, next http.Handler) http.Handler {
-	allowed := map[string]struct{}{}
-	for _, o := range origins {
-		allowed[o] = struct{}{}
+	var allowed map[string]struct{}
+	allowed = map[string]struct{}{}
+	for _, origin := range origins {
+		allowed[origin] = struct{}{}
 	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		origin := r.Header.Get("Origin")
+		var origin string
+		origin = r.Header.Get("Origin")
 		if _, ok := allowed[origin]; ok {
 			w.Header().Set("Access-Control-Allow-Origin", origin)
 			w.Header().Set("Vary", "Origin")
@@ -103,21 +122,27 @@ func CORS(origins []string, next http.Handler) http.Handler {
 	})
 }
 
+// BearerToken returns the bearer token, or an empty string when the header is absent.
 func BearerToken(r *http.Request) string {
-	h := r.Header.Get("Authorization")
-	if len(h) < 7 || !strings.EqualFold(h[:7], "Bearer ") {
+	var header string
+	header = r.Header.Get("Authorization")
+	if len(header) < 7 || !strings.EqualFold(header[:7], "Bearer ") {
 		return ""
 	}
-	return strings.TrimSpace(h[7:])
+	return strings.TrimSpace(header[7:])
 }
 
+// QueryInt reads an integer query parameter, or def when it is missing or invalid.
 func QueryInt(r *http.Request, name string, def int) int {
-	raw := r.URL.Query().Get(name)
+	var raw string
+	raw = r.URL.Query().Get(name)
 	if raw == "" {
 		return def
 	}
-	n := 0
-	sign := 1
+	var n int
+	n = 0
+	var sign int
+	sign = 1
 	for i, c := range raw {
 		if i == 0 && c == '-' {
 			sign = -1
