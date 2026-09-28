@@ -1,4 +1,3 @@
-// Package role applies role queries.
 package role
 
 import (
@@ -13,14 +12,4 @@ type Repository interface {
 	List(ctx context.Context) ([]entity.Role, error)
 	// Get returns one role. A missing id is ErrNotFound.
 	Get(ctx context.Context, id int) (entity.Role, error)
-}
-
-// Service coordinates role queries.
-type Service struct {
-	repository Repository
-}
-
-// New builds a role service.
-func New(repository Repository) *Service {
-	return &Service{repository: repository}
 }
